@@ -1,10 +1,16 @@
 #include <SPI.h>
 #include <nRF24L01.h>
 #include <RF24.h>
-#include <LiquidCrystal_I2C.h>
+#include <Wire.h>
+#include <Adafruit_GFX.h>
+#include <Adafruit_SSD1306.h>
 
-LiquidCrystal_I2C lcd(0x27,20,4);
-bool buttonWasPressed = false;
+#define SCREEN_WIDTH 128 // OLED display width, in pixels
+#define SCREEN_HEIGHT 32 // OLED display height, in pixels
+#define OLED_RESET     -1 // Reset pin # (or -1 if sharing Arduino reset pin)
+#define SCREEN_ADDRESS 0x3C ///< See datasheet for Address; 0x3D for 128x64, 0x3C for 128x32
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
+
 const byte pipe[][3] = {"ch1"};         // NOTE: The same as in the receiver
 RF24 radio(9,10);                       // select CE,CSN pin
       
@@ -15,17 +21,17 @@ struct ResponseSignal {
 ResponseSignal responseData;
 void setup()
 {
-  lcd.init();                     
-  lcd.backlight();
-  lcd.clear();
-  lcd.setCursor(0, 0);
-  lcd.print("Voltage:");
-  lcd.setCursor(0, 1);
-  lcd.print("Altitude:");
-  lcd.setCursor(0, 2);
-  lcd.print("Width:");
-  lcd.setCursor(0, 3);
-  lcd.print("Height:");
+  Serial.begin(9600);
+
+  // SSD1306_SWITCHCAPVCC = generate display voltage from 3.3V internally
+  if(!display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS)) {
+    Serial.println(F("SSD1306 allocation failed"));
+    for(;;); // Don't proceed, loop forever
+  }
+
+  // Clear the buffer
+  display.clearDisplay();
+
                                       //Configure the NRF24 module
   radio.begin();
   radio.openReadingPipe(1,pipe[0]);
@@ -42,8 +48,14 @@ void loop()
 while (radio.available()) {
   radio.read(&responseData, sizeof(ResponseSignal));// Receive the data
 }
-  lcd.setCursor(14, 0);
-  lcd.print((0.875 + (2.125/255) * responseData.voltage) * 5.71);
-  lcd.setCursor(14, 1);
-  lcd.print(responseData.altitude);
+  display.clearDisplay();
+  display.setTextSize(1); 
+  display.setTextColor(SSD1306_WHITE);        // Draw white text
+  display.setCursor(0,0);
+  display.print(F("Volt. V: "));
+  display.print((0.875 + (2.125/255) * responseData.voltage) * 5.71);
+  display.setCursor(0,10);
+  display.print(F("Alt. m:  "));
+  display.print(responseData.altitude);
+  display.display();
 }
