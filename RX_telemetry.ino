@@ -11,7 +11,7 @@
 #define SCREEN_ADDRESS 0x3C ///< See datasheet for Address; 0x3D for 128x64, 0x3C for 128x32
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
-const byte pipe[][3] = {"ch1"};         // NOTE: The same as in the receiver
+const byte pipe[3] = "ch2";         // NOTE: The same as in the receiver
 RF24 radio(9,10);                       // select CE,CSN pin
       
 struct ResponseSignal {
@@ -34,8 +34,8 @@ void setup()
 
                                       //Configure the NRF24 module
   radio.begin();
-  radio.openReadingPipe(1,pipe[0]);
-  radio.setChannel(100);
+  radio.openReadingPipe(1,pipe);
+  radio.setChannel(99);
   radio.setAutoAck(false);
   radio.setDataRate(RF24_250KBPS);    // The lowest data rate value for more stable communication
   radio.setPALevel(RF24_PA_MAX);      // Output power is set for maximum
@@ -45,15 +45,15 @@ void setup()
 
 void loop()
 {
+  display.clearDisplay();
 while (radio.available()) {
   radio.read(&responseData, sizeof(ResponseSignal));// Receive the data
 }
-  display.clearDisplay();
   display.setTextSize(1); 
   display.setTextColor(SSD1306_WHITE);        // Draw white text
   display.setCursor(0,0);
   display.print(F("Volt. V: "));
-  display.print((0.875 + (2.125/255) * responseData.voltage) * 5.71);
+  display.print((0.877 + (2.123/255) * responseData.voltage) * 5.7);
   display.setCursor(0,10);
   display.print(F("Alt. m:  "));
   display.print(responseData.altitude);
