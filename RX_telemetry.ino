@@ -10,6 +10,7 @@
 #define OLED_RESET     -1 // Reset pin # (or -1 if sharing Arduino reset pin)
 #define SCREEN_ADDRESS 0x3C ///< See datasheet for Address; 0x3D for 128x64, 0x3C for 128x32
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
+unsigned long timer = 0;
 
 const byte pipe[3] = "ch2";         // NOTE: The same as in the receiver
 RF24 radio(9,10);                       // select CE,CSN pin
@@ -41,21 +42,25 @@ void setup()
   radio.setPALevel(RF24_PA_MAX);      // Output power is set for maximum
   radio.startListening();
   delay(50);
+  timer = millis();
 }
 
 void loop()
 {
   display.clearDisplay();
-while (radio.available()) {
-  radio.read(&responseData, sizeof(ResponseSignal));// Receive the data
-}
-  display.setTextSize(1); 
-  display.setTextColor(SSD1306_WHITE);        // Draw white text
-  display.setCursor(0,0);
-  display.print(F("Volt. V: "));
-  display.print((0.877 + (2.123/255) * responseData.voltage) * 5.7);
-  display.setCursor(0,10);
-  display.print(F("Alt. m:  "));
-  display.print(responseData.altitude);
-  display.display();
+  while (radio.available()) {
+    radio.read(&responseData, sizeof(ResponseSignal));// Receive the data
+  }
+  if (millis() - timer > 500) {
+    timer = millis();
+    display.setTextSize(1); 
+    display.setTextColor(SSD1306_WHITE);        // Draw white text
+    display.setCursor(0,0);
+    display.print(F("Volt. V: "));
+    display.print((0.699 + (2.301/255) * responseData.voltage) * 5.72);
+    display.setCursor(0,10);
+    display.print(F("Alt. m:  "));
+    display.print(responseData.altitude);
+    display.display();
+  }
 }
